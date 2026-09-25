@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Aviso de Outlook Web</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; background-color: #f4f6f9; }
+        .card { background: white; padding: 25px; border-radius: 8px; max-width: 550px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #0078d4; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #005a9e; }
+        #logArea { width: 100%; height: 200px; background: #1e1e1e; color: #00ff00; font-family: monospace; padding: 10px; box-sizing: border-box; overflow-y: scroll; border-radius: 4px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Aviso de Outlook (Versión Web)</h2>
+    
+    <div class="form-group">
+        <label>Correo de Outlook:</label>
+        <input type="text" id="correo" placeholder="ejemplo@outlook.com">
+    </div>
+
+    <div class="form-group">
+        <label>ID de recuperación en Byom:</label>
+        <input type="text" id="byom_id" placeholder="mi_id_byom">
+    </div>
+
+    <button onclick="iniciar()">CONECTAR</button>
+
+    <h3>Registro de Actividad</h3>
+    <div id="logArea"></div>
+</div>
+
+<script>
+    const socket = io();
+
+    socket.on('nuevo_log', function(data) {
+        const logArea = document.getElementById('logArea');
+        logArea.innerHTML += data.mensaje + '<br>';
+        logArea.scrollTop = logArea.scrollHeight;
+    });
+
+    function iniciar() {
+        const correo = document.getElementById('correo').value;
+        const byom_id = document.getElementById('byom_id').value;
+        
+        if (!correo || !byom_id) {
+            alert('Por favor completa ambos campos.');
+            return;
+        }
+
+        document.getElementById('logArea').innerHTML = '';
+        socket.emit('iniciar_proceso', { correo: correo, byom_id: byom_id });
+    }
+</script>
+
+</body>
+</html>
