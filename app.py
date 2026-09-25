@@ -2,9 +2,12 @@ import os
 import re
 import sys
 import time
+
 from flask import Flask, render_template
 from flask_socketio import SocketIO
+
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -25,19 +28,19 @@ def emitir_log(mensaje):
 
 
 def crear_driver():
-    """Inicia Google Chrome dentro del contenedor de Render."""
+    """Inicia Chromium + ChromeDriver dentro de Render."""
 
-    emitir_log("Configurando Chrome para Render...")
+    emitir_log("Configurando Chromium para Render...")
 
     options = webdriver.ChromeOptions()
 
-    # Chrome instalado por nuestro Dockerfile
-    options.binary_location = "/usr/bin/google-chrome"
+    # Chromium instalado por el Dockerfile
+    options.binary_location = "/usr/bin/chromium"
 
-    # Ejecución completamente invisible
+    # Navegador invisible
     options.add_argument("--headless=new")
 
-    # Necesarios dentro de Docker / Render
+    # Necesarios para Docker / Render
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -53,23 +56,21 @@ def crear_driver():
 
     options.add_argument("--window-size=1365,768")
 
-    emitir_log("Intentando iniciar Google Chrome...")
+    emitir_log("Usando Chromium: /usr/bin/chromium")
+    emitir_log("Usando ChromeDriver: /usr/bin/chromedriver")
+    emitir_log("Intentando iniciar Chromium...")
 
-    driver = webdriver.Chrome(options=options)
+    service = Service(
+        executable_path="/usr/bin/chromedriver"
+    )
 
-    emitir_log("Chrome iniciado correctamente.")
+    driver = webdriver.Chrome(
+        service=service,
+        options=options
+    )
 
-    return driver
-    """Configura el navegador Chrome en modo Headless para Render/Docker."""
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-software-rasterizer")
-    options.add_argument("--window-size=1920,1080")
+    emitir_log("Chromium iniciado correctamente.")
 
-    driver = webdriver.Chrome(options=options)
     return driver
 
 
