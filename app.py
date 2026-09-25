@@ -2,7 +2,6 @@ import os
 import re
 import sys
 import time
-import threading
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 from selenium import webdriver
@@ -15,40 +14,31 @@ from selenium.webdriver.common.action_chains import ActionChains
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key_rolmer_2026'
 
-# Permite compatibilidad fluida tanto en Windows (threading) como en servidores (eventlet/gevent)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode=None)
+# Configuración de SocketIO usando gevent
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 
 def emitir_log(mensaje):
-    """Envía registros tanto a la consola del servidor como al cliente web por WebSockets."""
+    """Envía registros tanto a la consola de Render como al cuadro negro en la web por WebSockets."""
     print(f"LOG: {mensaje}", flush=True)
-    socketio.emit('log_message', {'data': mensaje})
+    socketio.emit('log_event', {'data': mensaje})
 
 
 def crear_driver():
-    """Configura el navegador Chrome adaptándose automáticamente a Windows o Linux/Docker."""
+    """Configura el navegador Chrome en modo Headless para Render/Docker."""
     options = webdriver.ChromeOptions()
-    
-    # Opciones de estabilidad general
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-notifications")
-    options.add_argument("--disable-popup-blocking")
-    
-    # Si se ejecuta en servidor Linux / Docker o headless
-    if sys.platform != "win32" or os.environ.get("HEADLESS", "false").lower() == "true":
-        options.add_argument("--headless=new")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=1920,1080")
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1920,1080")
 
-    # Selenium 4+ detecta automáticamente ChromeDriver
     driver = webdriver.Chrome(options=options)
     return driver
 
 
 def ejecutar_automatizacion(correo, byom_id):
-    """Proceso completo de automatización entre Outlook y Byom.de."""
+    """Proceso de automatización de Microsoft Outlook y Byom.de."""
     id_simple_byom = byom_id.split("@")[0].strip()
     correo_byom_completo = f"{id_simple_byom}@byom.de"
 
@@ -56,13 +46,14 @@ def ejecutar_automatizacion(correo, byom_id):
 
     driver = None
     try:
+        emitir_log("Iniciando navegador Chrome sin interfaz gráfica...")
         driver = crear_driver()
         wait = WebDriverWait(driver, 20)
 
         # -------------------------------------------------------------
         # PASO 1: Login Microsoft / Outlook
         # -------------------------------------------------------------
-        emitir_log("Paso 1: Abriendo Microsoft Login...")
+        emitir_log("Paso 1: Abriendo portal de inicio de sesión de Microsoft...")
         driver.get("https://login.live.com/")
         pestana_outlook = driver.current_window_handle
 
@@ -79,7 +70,7 @@ def ejecutar_automatizacion(correo, byom_id):
         # -------------------------------------------------------------
         # PASO 2: Consultar Byom.de en nueva pestaña
         # -------------------------------------------------------------
-        emitir_log("Paso 2: Abriendo Byom.de...")
+        emitir_log("Paso 2: Abriendo Byom.de en nueva pestaña...")
         driver.switch_to.new_window("tab")
         pestana_byom = driver.current_window_handle
         driver.get("https://www.byom.de/")
@@ -97,7 +88,7 @@ def ejecutar_automatizacion(correo, byom_id):
         # -------------------------------------------------------------
         # PASO 3: Solicitar el código de recuperación en Outlook
         # -------------------------------------------------------------
-        emitir_log("Paso 3: Enviando solicitud de código en Outlook...")
+        emitir_log("Paso 3: Solicitando envío de código de verificación...")
         driver.switch_to.window(pestana_outlook)
         time.sleep(1.5)
 
@@ -122,7 +113,7 @@ def ejecutar_automatizacion(correo, byom_id):
         # -------------------------------------------------------------
         # PASO 4: Extraer código de verificación en Byom.de
         # -------------------------------------------------------------
-        emitir_log("Paso 4: Esperando correo en Byom.de...")
+        emitir_log("Paso 4: Esperando recepción de correo en Byom.de...")
         driver.switch_to.window(pestana_byom)
         correo_encontrado = False
 
@@ -142,7 +133,7 @@ def ejecutar_automatizacion(correo, byom_id):
             time.sleep(2)
 
         if not correo_encontrado:
-            emitir_log("ERROR: No se recibió el correo de verificación dentro del tiempo esperado.")
+            emitir_log("ERROR: No se recibió el correo de verificación a tiempo.")
             return
 
         try:
@@ -160,16 +151,16 @@ def ejecutar_automatizacion(correo, byom_id):
         )
 
         if not match:
-            emitir_log("ERROR: Se abrió el correo pero no se pudo extraer la secuencia numérica del código.")
+            emitir_log("ERROR: No se pudo extraer el código del contenido del correo.")
             return
 
         codigo = match.group(1)
-        emitir_log(f"¡Código capturado exitosamente!: {codigo}")
+        emitir_log(f"¡CÓDIGO CAPTURADO EXITOSAMENTE!: {codigo}")
 
         # -------------------------------------------------------------
         # PASO 5: Pegar código en la pestaña de Outlook
         # -------------------------------------------------------------
-        emitir_log("Paso 5: Ingresando código en la sesión de Outlook...")
+        emitir_log("Paso 5: Introduciendo código en la sesión de Microsoft...")
         driver.switch_to.window(pestana_outlook)
         time.sleep(1)
 
@@ -179,9 +170,9 @@ def ejecutar_automatizacion(correo, byom_id):
         actions.send_keys(Keys.ENTER).perform()
 
         # -------------------------------------------------------------
-        # PASO 6: Pasar pantallas de confirmación (Passkey / Stay Signed In)
+        # PASO 6: Pasar pantallas finales de confirmación
         # -------------------------------------------------------------
-        emitir_log("Paso 6: Gestionando confirmaciones finales...")
+        emitir_log("Paso 6: Saltando avisos finales de seguridad...")
         for _ in range(4):
             time.sleep(2)
             try:
@@ -199,15 +190,15 @@ def ejecutar_automatizacion(correo, byom_id):
                     "//input[@id='idBtn_Back'] | //button[@id='idBtn_Back'] | //button[contains(.,'No')]",
                 )
                 driver.execute_script("arguments[0].click();", btn_no)
-                emitir_log("Respondido 'NO' en la confirmación de sesión activa.")
+                emitir_log("Omitida pregunta '¿Mantener la sesión iniciada?'")
             except Exception:
                 pass
 
         driver.get("https://outlook.live.com/mail/")
-        emitir_log("=== ¡PROCESO COMPLETADO EXITOSAMENTE! ===")
+        emitir_log("=== ¡PROCESO FINALIZADO EXITOSAMENTE! ===")
 
     except Exception as e:
-        emitir_log(f"Error inesperado durante la ejecución: {str(e)}")
+        emitir_log(f"ERROR DURANTE LA EJECUCIÓN: {str(e)}")
 
     finally:
         if driver:
@@ -223,23 +214,19 @@ def index():
     return render_template('index.html')
 
 
-@socketio.on('iniciar_proceso')
-def handle_iniciar_proceso(json_data):
-    correo = json_data.get('correo', '').strip()
-    byom_id = json_data.get('byom_id', '').strip()
+@socketio.on('iniciar_bot')
+def handle_iniciar_bot(data):
+    correo = data.get('correo', '').strip()
+    byom_id = data.get('id_recuperacion', '').strip()
 
     if not correo or not byom_id:
-        emitir_log("ERROR: Debes proporcionar tanto el correo como el ID de Byom.")
+        emitir_log("ERROR: Debes ingresar tanto el correo como el ID de Byom.")
         return
 
     emitir_log(f"Recibida solicitud para el correo: {correo}")
-
-    # Inicia la tarea en un hilo independiente para evitar bloqueos
-    thread = threading.Thread(target=ejecutar_automatizacion, args=(correo, byom_id))
-    thread.daemon = True
-    thread.start()
+    socketio.start_background_task(ejecutar_automatizacion, correo, byom_id)
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     socketio.run(app, host='0.0.0.0', port=port)
