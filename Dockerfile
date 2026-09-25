@@ -1,23 +1,19 @@
-FROM python:3.10-slim
+FROM selenium/standalone-chrome:latest
 
-# Instalar dependencias necesarias y Chromium / ChromeDriver desde los repositorios oficiales de Linux
+USER root
+
 RUN apt-get update && apt-get install -y \
-    chromium \
-    chromium-driver \
-    fonts-liberation \
-    libnss3 \
-    libgconf-2-4 \
-    libasound2 \
-    curl \
+    python3 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 EXPOSE 5000
 
-CMD ["python", "app.py"]
+CMD ["python3", "app.py"]
