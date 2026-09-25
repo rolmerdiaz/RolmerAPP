@@ -1,25 +1,25 @@
 FROM python:3.10-slim
 
-# Instalar Google Chrome y dependencias necesarias
+# Instalar Google Chrome usando la versión moderna
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
-    unzip \
     curl \
-    libgconf-2-4 \
-    libnss3 \
-    libgdk-pixbuf2.0-0 \
-    libgtk-3-0 \
-    libxss1 \
-    libasound2 \
+    unzip \
     fonts-liberation \
-    libappindicator3-1 \
-    xdg-utils \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
+
+# Descargar e instalar Google Chrome Stable desde el repositorio oficial
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get install -fy \
+    && rm google-chrome-stable_current_amd64.deb
 
 WORKDIR /app
 
