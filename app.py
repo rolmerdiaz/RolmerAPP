@@ -1,28 +1,3 @@
-import os
-import re
-import time
-from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
-
-app = Flask(__name__)
-app.config["SECRET_KEY"] = "clave_secreta_outlook"
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-
-def emitir_log(mensaje):
-    texto = f"[{time.strftime('%H:%M:%S')}] {mensaje}"
-    print(texto)
-    socketio.emit("nuevo_log", {"mensaje": texto})
-
-
 def ejecutar_automatizacion(correo, byom_id):
     id_simple_byom = byom_id.split("@")[0]
     correo_byom_completo = f"{id_simple_byom}@byom.de"
@@ -30,6 +5,7 @@ def ejecutar_automatizacion(correo, byom_id):
     emitir_log("=== INICIANDO AUTOMATIZACIÓN EN EL SERVIDOR ===")
 
     chrome_options = webdriver.ChromeOptions()
+    chrome_options.binary_location = "/usr/bin/google-chrome"
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -182,21 +158,3 @@ def ejecutar_automatizacion(correo, byom_id):
     finally:
         if driver:
             driver.quit()
-
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@socketio.on("iniciar_proceso")
-def handle_iniciar_proceso(data):
-    correo = data.get("correo")
-    byom_id = data.get("byom_id")
-    emitir_log("Recibida solicitud de inicio...")
-    socketio.start_background_task(ejecutar_automatizacion, correo, byom_id)
-
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port)
