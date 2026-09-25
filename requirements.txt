@@ -1,6 +1,4 @@
-flask
-flask-socketio
+Flask
+Flask-SocketIO
+selenium>=4.10.0
 eventlet
-selenium
-webdriver-manager
-gunicorn
