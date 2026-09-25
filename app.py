@@ -1,3 +1,22 @@
+import time
+import re
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.actionchains import ActionChains
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret_key_rolmer'
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+
+def emitir_log(mensaje):
+    print(mensaje)
+    socketio.emit('log_message', {'data': mensaje})
+
 def ejecutar_automatizacion(correo, byom_id):
     id_simple_byom = byom_id.split("@")[0]
     correo_byom_completo = f"{id_simple_byom}@byom.de"
@@ -5,18 +24,16 @@ def ejecutar_automatizacion(correo, byom_id):
     emitir_log("=== INICIANDO AUTOMATIZACIÓN EN EL SERVIDOR ===")
 
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.binary_location = "/usr/bin/google-chrome"
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--remote-debugging-port=9222")
     chrome_options.add_argument("--window-size=1920,1080")
 
     driver = None
     try:
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        # En la imagen oficial de Selenium, webdriver.Chrome detecta automáticamente ChromeDriver y Chrome
+        driver = webdriver.Chrome(options=chrome_options)
         wait = WebDriverWait(driver, 20)
 
         # Paso 1: Login Microsoft
@@ -158,3 +175,17 @@ def ejecutar_automatizacion(correo, byom_id):
     finally:
         if driver:
             driver.quit()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@socketio.on('iniciar_proceso')
+def handle_iniciar_proceso(json_data):
+    correo = json_data.get('correo')
+    byom_id = json_data.get('byom_id')
+    emitir_log("Recibida solicitud de inicio...")
+    socketio.start_background_task(ejecutar_automatizacion, correo, byom_id)
+
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5000)
