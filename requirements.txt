@@ -1,5 +1,6 @@
 Flask
 Flask-SocketIO
-eventlet
 selenium>=4.10.0
 gunicorn
+gevent
+gevent-websocket
