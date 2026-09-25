@@ -1,19 +1,32 @@
-FROM selenium/standalone-chrome:latest
+FROM python:3.10-slim
 
-USER root
-
+# Instalar dependencias del sistema y Google Chrome
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
+    wget \
+    gnupg \
+    curl \
+    unzip \
+    fonts-liberation \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
+
+RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get install -fy \
+    && rm google-chrome-stable_current_amd64.deb
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 EXPOSE 5000
 
-CMD ["python3", "app.py"]
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "app:app"]
