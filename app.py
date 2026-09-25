@@ -33,13 +33,15 @@ def ejecutar_automatizacion(correo, byom_id):
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--remote-debugging-port=9222")
     chrome_options.add_argument("--window-size=1920,1080")
 
     driver = None
     try:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        wait = WebDriverWait(driver, 15)
+        wait = WebDriverWait(driver, 20)
 
         # Paso 1: Login Microsoft
         emitir_log("Paso 1: Abriendo Microsoft Login...")
@@ -191,6 +193,7 @@ def index():
 def handle_iniciar_proceso(data):
     correo = data.get("correo")
     byom_id = data.get("byom_id")
+    emitir_log("Recibida solicitud de inicio...")
     socketio.start_background_task(ejecutar_automatizacion, correo, byom_id)
 
 
