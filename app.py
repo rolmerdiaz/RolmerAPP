@@ -25,6 +25,41 @@ def emitir_log(mensaje):
 
 
 def crear_driver():
+    """Inicia Google Chrome dentro del contenedor de Render."""
+
+    emitir_log("Configurando Chrome para Render...")
+
+    options = webdriver.ChromeOptions()
+
+    # Chrome instalado por nuestro Dockerfile
+    options.binary_location = "/usr/bin/google-chrome"
+
+    # Ejecución completamente invisible
+    options.add_argument("--headless=new")
+
+    # Necesarios dentro de Docker / Render
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-software-rasterizer")
+
+    # Reducir consumo de memoria
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-background-networking")
+    options.add_argument("--disable-sync")
+    options.add_argument("--disable-default-apps")
+    options.add_argument("--no-first-run")
+    options.add_argument("--no-default-browser-check")
+
+    options.add_argument("--window-size=1365,768")
+
+    emitir_log("Intentando iniciar Google Chrome...")
+
+    driver = webdriver.Chrome(options=options)
+
+    emitir_log("Chrome iniciado correctamente.")
+
+    return driver
     """Configura el navegador Chrome en modo Headless para Render/Docker."""
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
@@ -32,7 +67,6 @@ def crear_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-software-rasterizer")
-    options.add_argument("--remote-debugging-port=9222")
     options.add_argument("--window-size=1920,1080")
 
     driver = webdriver.Chrome(options=options)
