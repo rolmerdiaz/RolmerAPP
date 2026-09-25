@@ -1,0 +1,6 @@
+flask
+flask-socketio
+selenium
+webdriver-manager
+gunicorn
+eventlet
