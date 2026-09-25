@@ -195,9 +195,50 @@ def ejecutar_automatizacion(correo, byom_id):
                 emitir_log("Omitida pregunta '¿Mantener la sesión iniciada?'")
             except Exception:
                 pass
+        # -------------------------------------------------------------
+        # PASO 7: DEJAR QUE MICROSOFT REDIRIJA POR SU CUENTA
+        # -------------------------------------------------------------
+        emitir_log("Paso 7: Esperando redirección automática de Microsoft...")
 
-        driver.get("https://outlook.live.com/mail/")
-        emitir_log("=== ¡PROCESO FINALIZADO EXITOSAMENTE! ===")
+        time.sleep(5)
+
+        url_actual = driver.current_url.lower()
+
+        emitir_log(f"URL después del login: {driver.current_url}")
+
+        if (
+            "outlook.live.com/mail" in url_actual
+            or "outlook.office.com/mail" in url_actual
+            or "outlook.com/mail" in url_actual
+        ):
+            emitir_log("Microsoft llegó automáticamente a Outlook Mail.")
+
+        elif (
+            "login.live.com" not in url_actual
+            and "login.microsoftonline.com" not in url_actual
+        ):
+            emitir_log(
+                "Microsoft terminó el login pero redirigió a otra página."
+            )
+
+            emitir_log(
+                "Usando outlook.com/mail/ como alternativa..."
+            )
+
+            driver.get("https://outlook.com/mail/")
+
+        else:
+            emitir_log(
+                "Microsoft todavía está en el proceso de inicio de sesión."
+            )
+
+            emitir_log(
+                "No se forzará Outlook mientras Microsoft siga en Login."
+            )
+
+            return
+
+        emitir_log("=== PROCESO DE OUTLOOK COMPLETADO ===")
 
     except Exception as e:
         emitir_log(f"ERROR DURANTE LA EJECUCIÓN: {str(e)}")
