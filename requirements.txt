@@ -1,4 +1,5 @@
 Flask
 Flask-SocketIO
-selenium>=4.10.0
 eventlet
+selenium>=4.10.0
+gunicorn
