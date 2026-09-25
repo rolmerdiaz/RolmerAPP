@@ -1,24 +1,15 @@
 FROM python:3.10-slim
 
-# Instalar Google Chrome
+# Instalar dependencias necesarias y Chromium / ChromeDriver desde los repositorios oficiales de Linux
 RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    curl \
-    unzip \
+    chromium \
+    chromium-driver \
     fonts-liberation \
     libnss3 \
-    libatk-bridge2.0-0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgbm1 \
+    libgconf-2-4 \
     libasound2 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
-
-RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && dpkg -i google-chrome-stable_current_amd64.deb || apt-get install -fy \
-    && rm google-chrome-stable_current_amd64.deb
 
 WORKDIR /app
 
