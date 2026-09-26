@@ -28,7 +28,6 @@ def emitir_log(mensaje):
 
 
 def crear_driver():
-def crear_driver():
     """Inicia Chromium + ChromeDriver dentro de Render."""
 
     emitir_log("Configurando Chromium para Render...")
