@@ -249,106 +249,106 @@ def ejecutar_automatizacion(correo, byom_id):
         # -------------------------------------------------------------
         # PASO 7: DEJAR QUE MICROSOFT REDIRIJA POR SU CUENTA
         # -------------------------------------------------------------
-emitir_log("Paso 7: Esperando que Microsoft termine la redirección...")
-
-inicio = time.time()
-
-while time.time() - inicio < 90:
-
-    url_actual = driver.current_url.lower()
-
-    try:
-        titulo_actual = driver.title
-    except Exception:
-        titulo_actual = ""
-
-    emitir_log(
-        "Esperando Microsoft | "
-        + "Título: "
-        + titulo_actual
-    )
-
-    if (
-        "outlook.live.com/mail" in url_actual
-        or "outlook.office.com/mail" in url_actual
-        or "outlook.com/mail" in url_actual
-    ):
-        emitir_log("Microsoft llegó automáticamente a Outlook Mail.")
-        break
-
-    # Si Microsoft ya salió completamente del dominio de login,
-    # dejamos de esperar para que el bloque siguiente examine el destino.
-    if (
-        "login.live.com" not in url_actual
-        and "login.microsoftonline.com" not in url_actual
-    ):
-        emitir_log("Microsoft terminó su redirección.")
-        break
-
-    time.sleep(3)
-
-else:
-    emitir_log(
-        "Microsoft continúa en el proceso de inicio de sesión "
-        "después de 90 segundos."
-    )
-
+    emitir_log("Paso 7: Esperando que Microsoft termine la redirección...")
+    
+    inicio = time.time()
+    
+    while time.time() - inicio < 90:
+    
+        url_actual = driver.current_url.lower()
+    
+        try:
+            titulo_actual = driver.title
+        except Exception:
+            titulo_actual = ""
+    
+        emitir_log(
+            "Esperando Microsoft | "
+            + "Título: "
+            + titulo_actual
+        )
+    
         if (
             "outlook.live.com/mail" in url_actual
             or "outlook.office.com/mail" in url_actual
             or "outlook.com/mail" in url_actual
         ):
             emitir_log("Microsoft llegó automáticamente a Outlook Mail.")
-
-        elif (
+            break
+    
+        # Si Microsoft ya salió completamente del dominio de login,
+        # dejamos de esperar para que el bloque siguiente examine el destino.
+        if (
             "login.live.com" not in url_actual
             and "login.microsoftonline.com" not in url_actual
         ):
-            emitir_log(
-                "Microsoft terminó el login pero redirigió a otra página."
-            )
-
-            emitir_log(
-                "Usando outlook.com/mail/ como alternativa..."
-            )
-
-            driver.get("https://outlook.com/mail/")
-
-            emitir_log("Esperando que Outlook abra la bandeja...")
-
-            try:
-                WebDriverWait(driver, 60).until(
-                    lambda d: (
-                        "outlook.live.com/mail" in d.current_url.lower()
-                        or "outlook.office.com/mail" in d.current_url.lower()
-                        or "outlook.com/mail" in d.current_url.lower()
+            emitir_log("Microsoft terminó su redirección.")
+            break
+    
+        time.sleep(3)
+    
+    else:
+        emitir_log(
+            "Microsoft continúa en el proceso de inicio de sesión "
+            "después de 90 segundos."
+        )
+    
+            if (
+                "outlook.live.com/mail" in url_actual
+                or "outlook.office.com/mail" in url_actual
+                or "outlook.com/mail" in url_actual
+            ):
+                emitir_log("Microsoft llegó automáticamente a Outlook Mail.")
+    
+            elif (
+                "login.live.com" not in url_actual
+                and "login.microsoftonline.com" not in url_actual
+            ):
+                emitir_log(
+                    "Microsoft terminó el login pero redirigió a otra página."
+                )
+    
+                emitir_log(
+                    "Usando outlook.com/mail/ como alternativa..."
+                )
+    
+                driver.get("https://outlook.com/mail/")
+    
+                emitir_log("Esperando que Outlook abra la bandeja...")
+    
+                try:
+                    WebDriverWait(driver, 60).until(
+                        lambda d: (
+                            "outlook.live.com/mail" in d.current_url.lower()
+                            or "outlook.office.com/mail" in d.current_url.lower()
+                            or "outlook.com/mail" in d.current_url.lower()
+                        )
                     )
-                )
-
+    
+                    emitir_log(
+                        "Outlook Mail abierto correctamente: "
+                        + driver.current_url
+                    )
+    
+                except Exception:
+                    emitir_log(
+                        "ERROR: Outlook no llegó a la bandeja. URL actual: "
+                        + driver.current_url
+                    )
+                    return
+    
+            else:
                 emitir_log(
-                    "Outlook Mail abierto correctamente: "
-                    + driver.current_url
+                    "Microsoft todavía está en el proceso de inicio de sesión."
                 )
-
-            except Exception:
+    
                 emitir_log(
-                    "ERROR: Outlook no llegó a la bandeja. URL actual: "
-                    + driver.current_url
+                    "No se forzará Outlook mientras Microsoft siga en Login."
                 )
+    
                 return
-
-        else:
-            emitir_log(
-                "Microsoft todavía está en el proceso de inicio de sesión."
-            )
-
-            emitir_log(
-                "No se forzará Outlook mientras Microsoft siga en Login."
-            )
-
-            return
-
-        emitir_log("=== PROCESO DE OUTLOOK COMPLETADO ===")
+    
+            emitir_log("=== PROCESO DE OUTLOOK COMPLETADO ===")
 
     except Exception as e:
         emitir_log(f"ERROR DURANTE LA EJECUCIÓN: {str(e)}")
