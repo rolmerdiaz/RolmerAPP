@@ -72,20 +72,20 @@ options.add_experimental_option("prefs", prefs)
 # una navegación.
 options.page_load_strategy = "eager"
 
-    emitir_log("Usando Chromium: /usr/bin/chromium")
-    emitir_log("Usando ChromeDriver: /usr/bin/chromedriver")
-    emitir_log("Intentando iniciar Chromium...")
+emitir_log("Usando Chromium: /usr/bin/chromium")
+emitir_log("Usando ChromeDriver: /usr/bin/chromedriver")
+emitir_log("Intentando iniciar Chromium...")
 
-    service = Service(
-        executable_path="/usr/bin/chromedriver"
-    )
+service = Service(
+    executable_path="/usr/bin/chromedriver"
+)
 
-    driver = webdriver.Chrome(
-        service=service,
-        options=options
-    )
+driver = webdriver.Chrome(
+    service=service,
+    options=options
+)
 
-    emitir_log("Chromium iniciado correctamente.")
+emitir_log("Chromium iniciado correctamente.")
 
     return driver
 
