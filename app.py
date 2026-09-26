@@ -291,39 +291,107 @@ def ejecutar_automatizacion(correo, byom_id):
             "Buscando mensajes nuevos de Amazon..."
         )
 
+        # -------------------------------------------------------------
+        # DETECTOR DE CORREOS DE AMAZON
+        # -------------------------------------------------------------
+
+        REMITENTE_AMAZON = "account-update@amazon.com"
+
+        ASUNTOS_LOGIN_AMAZON = [
+            # Ingles
+            "sign-in attempt",
+            "login attempt",
+
+            # Espanol
+            "intento de inicio de sesión",
+            "intento de inicio de sesion",
+
+            # Portugues
+            "tentativa de acesso",
+            "tentativa de login",
+
+            # Frances
+            "tentative de connexion",
+
+            # Italiano
+            "tentativo di accesso",
+
+            # Aleman
+            "anmeldeversuch",
+        ]
+
+        def es_correo_login_amazon(texto):
+            if not texto:
+                return False
+
+            texto = texto.lower().strip()
+
+            # Metodo principal:
+            # si Outlook muestra la direccion real del remitente,
+            # no importa en que idioma venga el asunto.
+            if REMITENTE_AMAZON in texto:
+                return True
+
+            # Metodo secundario:
+            # algunas vistas de Outlook solo muestran "amazon.com".
+            if "amazon.com" in texto:
+                for asunto in ASUNTOS_LOGIN_AMAZON:
+                    if asunto in texto:
+                        return True
+
+            return False
+
+        emitir_log(
+            "Detector configurado para: "
+            "amazon.com <account-update@amazon.com>"
+        )
+
+        emitir_log(
+            "Esperando un correo de inicio de sesion de Amazon..."
+        )
+
         amazon_detectado = False
+        contador_revision = 0
 
         while True:
 
             try:
-                # Buscar elementos visibles relacionados con el
-                # remitente o nombre mostrado por Amazon.
-                elementos = driver.find_elements(
-                    By.XPATH,
-                    "//*[contains("
-                    "translate(normalize-space(.),"
-                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ',"
-                    "'abcdefghijklmnopqrstuvwxyz'),"
-                    "'amazon.com'"
-                    ")]"
-                )
+                contador_revision += 1
 
                 encontrado = False
+
+                # Outlook es dinamico. Revisamos elementos visibles
+                # que puedan representar filas/mensajes de la bandeja.
+                elementos = driver.find_elements(
+                    By.XPATH,
+                    "//*[@role='option'] | "
+                    "//*[@role='listitem'] | "
+                    "//*[@data-convid] | "
+                    "//*[@data-itemid]"
+                )
+
+                # Si Outlook cambia sus atributos y no encontramos
+                # filas mediante esos selectores, usamos elementos
+                # visibles como metodo alternativo.
+                if not elementos:
+                    elementos = driver.find_elements(
+                        By.XPATH,
+                        "//div[string-length(normalize-space(.)) > 0]"
+                    )
 
                 for elemento in elementos:
 
                     try:
-                        texto = elemento.text.strip().lower()
+                        if not elemento.is_displayed():
+                            continue
+
+                        texto = elemento.text.strip()
 
                         if not texto:
                             continue
 
-                        # Nos interesa identificar el mensaje,
-                        # no leer códigos de autenticación.
-                        if (
-                            "amazon.com" in texto
-                            or "account-update@amazon.com" in texto
-                        ):
+                        if es_correo_login_amazon(texto):
+
                             encontrado = True
                             break
 
@@ -335,7 +403,12 @@ def ejecutar_automatizacion(correo, byom_id):
                     amazon_detectado = True
 
                     emitir_log(
-                        "Correo de Amazon detectado en Outlook."
+                        "Correo de inicio de sesion de Amazon detectado."
+                    )
+
+                    emitir_log(
+                        "Remitente identificado: "
+                        "account-update@amazon.com"
                     )
 
                     socketio.emit(
@@ -351,11 +424,16 @@ def ejecutar_automatizacion(correo, byom_id):
 
                 elif not encontrado:
 
-                    # Permite detectar nuevamente si desaparece
-                    # el mensaje y posteriormente llega otro.
                     amazon_detectado = False
 
-                # Mantener la tarea y el WebSocket activos.
+                # Confirmacion periodica de que Selenium
+                # continua revisando Outlook.
+                if contador_revision % 10 == 0:
+
+                    emitir_log(
+                        "Monitor activo: revisando bandeja de Outlook..."
+                    )
+
                 socketio.sleep(2)
 
             except Exception as monitor_error:
@@ -366,7 +444,6 @@ def ejecutar_automatizacion(correo, byom_id):
                 )
 
                 socketio.sleep(3)
-                
     except Exception as e:
         emitir_log(f"ERROR DURANTE LA EJECUCIÓN: {str(e)}")
 
