@@ -262,6 +262,29 @@ def ejecutar_automatizacion(correo, byom_id):
 
             driver.get("https://outlook.com/mail/")
 
+            emitir_log("Esperando que Outlook abra la bandeja...")
+
+            try:
+                WebDriverWait(driver, 60).until(
+                    lambda d: (
+                        "outlook.live.com/mail" in d.current_url.lower()
+                        or "outlook.office.com/mail" in d.current_url.lower()
+                        or "outlook.com/mail" in d.current_url.lower()
+                    )
+                )
+
+                emitir_log(
+                    "Outlook Mail abierto correctamente: "
+                    + driver.current_url
+                )
+
+            except Exception:
+                emitir_log(
+                    "ERROR: Outlook no llegó a la bandeja. URL actual: "
+                    + driver.current_url
+                )
+                return
+
         else:
             emitir_log(
                 "Microsoft todavía está en el proceso de inicio de sesión."
