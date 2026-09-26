@@ -243,8 +243,123 @@ def ejecutar_automatizacion(correo, byom_id):
         # -------------------------------------------------------------
         # PASO 7: DEJAR QUE MICROSOFT REDIRIJA POR SU CUENTA
         # -------------------------------------------------------------
-        emitir_log("Paso 7: Proceso anterior completado correctamente.")
-        emitir_log("=== PROCESO COMPLETADO ===")
+                # -------------------------------------------------------------
+        # PASO 7: ABRIR OUTLOOK Y MANTENER LA SESION ACTIVA
+        # -------------------------------------------------------------
+        emitir_log("Paso 7: Abriendo bandeja de entrada de Outlook...")
+
+        driver.get("https://outlook.live.com/mail/0/")
+
+        try:
+            WebDriverWait(driver, 60).until(
+                lambda d: (
+                    "outlook.live.com/mail" in d.current_url.lower()
+                    or "outlook.office.com/mail" in d.current_url.lower()
+                    or "outlook.com/mail" in d.current_url.lower()
+                )
+            )
+
+            emitir_log("Outlook Mail abierto correctamente.")
+
+        except Exception:
+            emitir_log(
+                "ERROR: Outlook no pudo abrir la bandeja de entrada."
+            )
+            emitir_log(
+                "URL actual: " + driver.current_url
+            )
+            return
+
+        # Avisar a la pagina web
+        socketio.emit(
+            "outlook_status",
+            {
+                "ready": True
+            }
+        )
+
+        emitir_log("OUTLOOK LISTO.")
+        emitir_log("Esperando nuevos correos de Amazon...")
+
+        # -------------------------------------------------------------
+        # TOMAR COMO BASE LOS CORREOS DE AMAZON QUE YA EXISTEN
+        # -------------------------------------------------------------
+        def elementos_amazon_actuales():
+            encontrados = set()
+
+            try:
+                elementos = driver.find_elements(
+                    By.XPATH,
+                    "//*[contains("
+                    "translate(normalize-space(.),"
+                    "'ABCDEFGHIJKLMNOPQRSTUVWXYZ',"
+                    "'abcdefghijklmnopqrstuvwxyz'),"
+                    "'amazon'"
+                    ")]"
+                )
+
+                for elemento in elementos:
+                    try:
+                        texto = elemento.text.strip()
+
+                        if texto and len(texto) < 300:
+                            encontrados.add(texto)
+
+                    except Exception:
+                        pass
+
+            except Exception:
+                pass
+
+            return encontrados
+
+        amazon_inicial = elementos_amazon_actuales()
+
+        emitir_log(
+            "Monitor de correo iniciado. "
+            "La sesión permanecerá activa."
+        )
+
+        # -------------------------------------------------------------
+        # MONITOREAR LA BANDEJA
+        # -------------------------------------------------------------
+        while True:
+
+            time.sleep(5)
+
+            try:
+                amazon_actual = elementos_amazon_actuales()
+
+                nuevos = amazon_actual - amazon_inicial
+
+                if nuevos:
+
+                    emitir_log(
+                        "Nuevo correo relacionado con Amazon detectado."
+                    )
+
+                    socketio.emit(
+                        "amazon_mail_status",
+                        {
+                            "received": True
+                        }
+                    )
+
+                    # Actualizamos la base para no avisar
+                    # repetidamente por el mismo elemento.
+                    amazon_inicial = amazon_actual
+
+                # Mantener viva la conexion con la pagina
+                socketio.sleep(0)
+
+            except Exception as monitor_error:
+
+                emitir_log(
+                    "Aviso del monitor: "
+                    + str(monitor_error)
+                )
+
+                time.sleep(5)
 
     except Exception as e:
         emitir_log(f"ERROR DURANTE LA EJECUCIÓN: {str(e)}")
