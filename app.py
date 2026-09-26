@@ -47,14 +47,30 @@ def crear_driver():
     options.add_argument("--disable-software-rasterizer")
 
     # Reducir consumo de memoria
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-background-networking")
-    options.add_argument("--disable-sync")
-    options.add_argument("--disable-default-apps")
-    options.add_argument("--no-first-run")
-    options.add_argument("--no-default-browser-check")
+options.add_argument("--headless=new")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--disable-extensions")
+options.add_argument("--disable-background-networking")
+options.add_argument("--disable-sync")
+options.add_argument("--disable-default-apps")
+options.add_argument("--no-first-run")
+options.add_argument("--no-default-browser-check")
+options.add_argument("--window-size=1365,768")
 
-    options.add_argument("--window-size=1365,768")
+# Reducir trabajo innecesario de Chromium
+options.add_argument("--disable-features=Translate,MediaRouter")
+options.add_argument("--disable-notifications")
+
+prefs = {
+    "profile.default_content_setting_values.notifications": 2,
+}
+options.add_experimental_option("prefs", prefs)
+
+# No esperar recursos secundarios para considerar terminada
+# una navegación.
+options.page_load_strategy = "eager"
 
     emitir_log("Usando Chromium: /usr/bin/chromium")
     emitir_log("Usando ChromeDriver: /usr/bin/chromedriver")
@@ -233,13 +249,49 @@ def ejecutar_automatizacion(correo, byom_id):
         # -------------------------------------------------------------
         # PASO 7: DEJAR QUE MICROSOFT REDIRIJA POR SU CUENTA
         # -------------------------------------------------------------
-        emitir_log("Paso 7: Esperando redirección automática de Microsoft...")
+emitir_log("Paso 7: Esperando que Microsoft termine la redirección...")
 
-        time.sleep(5)
+inicio = time.time()
 
-        url_actual = driver.current_url.lower()
+while time.time() - inicio < 90:
 
-        emitir_log(f"URL después del login: {driver.current_url}")
+    url_actual = driver.current_url.lower()
+
+    try:
+        titulo_actual = driver.title
+    except Exception:
+        titulo_actual = ""
+
+    emitir_log(
+        "Esperando Microsoft | "
+        + "Título: "
+        + titulo_actual
+    )
+
+    if (
+        "outlook.live.com/mail" in url_actual
+        or "outlook.office.com/mail" in url_actual
+        or "outlook.com/mail" in url_actual
+    ):
+        emitir_log("Microsoft llegó automáticamente a Outlook Mail.")
+        break
+
+    # Si Microsoft ya salió completamente del dominio de login,
+    # dejamos de esperar para que el bloque siguiente examine el destino.
+    if (
+        "login.live.com" not in url_actual
+        and "login.microsoftonline.com" not in url_actual
+    ):
+        emitir_log("Microsoft terminó su redirección.")
+        break
+
+    time.sleep(3)
+
+else:
+    emitir_log(
+        "Microsoft continúa en el proceso de inicio de sesión "
+        "después de 90 segundos."
+    )
 
         if (
             "outlook.live.com/mail" in url_actual
