@@ -87,7 +87,7 @@ driver = webdriver.Chrome(
 
 emitir_log("Chromium iniciado correctamente.")
 
-    return driver
+return driver
 
 
 def ejecutar_automatizacion(correo, byom_id):
