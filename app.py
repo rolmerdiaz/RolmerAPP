@@ -282,60 +282,60 @@ def ejecutar_automatizacion(correo, byom_id):
         emitir_log("Esperando nuevos correos de Amazon...")
 
         # -------------------------------------------------------------
-        # TOMAR COMO BASE LOS CORREOS DE AMAZON QUE YA EXISTEN
         # -------------------------------------------------------------
-        def elementos_amazon_actuales():
-            encontrados = set()
+        # MONITOR DE CORREOS DE AMAZON
+        # -------------------------------------------------------------
+
+        emitir_log(
+            "Monitor de correo iniciado. "
+            "Buscando mensajes nuevos de Amazon..."
+        )
+
+        amazon_detectado = False
+
+        while True:
 
             try:
+                # Buscar elementos visibles relacionados con el
+                # remitente o nombre mostrado por Amazon.
                 elementos = driver.find_elements(
                     By.XPATH,
                     "//*[contains("
                     "translate(normalize-space(.),"
                     "'ABCDEFGHIJKLMNOPQRSTUVWXYZ',"
                     "'abcdefghijklmnopqrstuvwxyz'),"
-                    "'amazon'"
+                    "'amazon.com'"
                     ")]"
                 )
 
-                for elemento in elementos:
-                    try:
-                        texto = elemento.text.strip()
+                encontrado = False
 
-                        if texto and len(texto) < 300:
-                            encontrados.add(texto)
+                for elemento in elementos:
+
+                    try:
+                        texto = elemento.text.strip().lower()
+
+                        if not texto:
+                            continue
+
+                        # Nos interesa identificar el mensaje,
+                        # no leer códigos de autenticación.
+                        if (
+                            "amazon.com" in texto
+                            or "account-update@amazon.com" in texto
+                        ):
+                            encontrado = True
+                            break
 
                     except Exception:
-                        pass
+                        continue
 
-            except Exception:
-                pass
+                if encontrado and not amazon_detectado:
 
-            return encontrados
-
-        amazon_inicial = elementos_amazon_actuales()
-
-        emitir_log(
-            "Monitor de correo iniciado. "
-            "La sesión permanecerá activa."
-        )
-
-        # -------------------------------------------------------------
-        # MONITOREAR LA BANDEJA
-        # -------------------------------------------------------------
-        while True:
-
-            time.sleep(5)
-
-            try:
-                amazon_actual = elementos_amazon_actuales()
-
-                nuevos = amazon_actual - amazon_inicial
-
-                if nuevos:
+                    amazon_detectado = True
 
                     emitir_log(
-                        "Nuevo correo relacionado con Amazon detectado."
+                        "Correo de Amazon detectado en Outlook."
                     )
 
                     socketio.emit(
@@ -345,22 +345,28 @@ def ejecutar_automatizacion(correo, byom_id):
                         }
                     )
 
-                    # Actualizamos la base para no avisar
-                    # repetidamente por el mismo elemento.
-                    amazon_inicial = amazon_actual
+                    emitir_log(
+                        "CORREO DE AMAZON RECIBIDO."
+                    )
 
-                # Mantener viva la conexion con la pagina
-                socketio.sleep(0)
+                elif not encontrado:
+
+                    # Permite detectar nuevamente si desaparece
+                    # el mensaje y posteriormente llega otro.
+                    amazon_detectado = False
+
+                # Mantener la tarea y el WebSocket activos.
+                socketio.sleep(2)
 
             except Exception as monitor_error:
 
                 emitir_log(
-                    "Aviso del monitor: "
+                    "Aviso del monitor de correo: "
                     + str(monitor_error)
                 )
 
-                time.sleep(5)
-
+                socketio.sleep(3)
+                
     except Exception as e:
         emitir_log(f"ERROR DURANTE LA EJECUCIÓN: {str(e)}")
 
