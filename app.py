@@ -83,7 +83,8 @@ def crear_driver():
     emitir_log("Chromium iniciado correctamente.")
 
     return driver
-    
+
+
 def ejecutar_automatizacion(correo, byom_id):
     """Proceso de automatización de Microsoft Outlook y Byom.de."""
     id_simple_byom = byom_id.split("@")[0].strip()
