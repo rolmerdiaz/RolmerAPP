@@ -28,13 +28,14 @@ def emitir_log(mensaje):
 
 
 def crear_driver():
+def crear_driver():
     """Inicia Chromium + ChromeDriver dentro de Render."""
 
     emitir_log("Configurando Chromium para Render...")
 
     options = webdriver.ChromeOptions()
 
-    # Chromium instalado por el Dockerfile
+    # Chromium instalado por Docker
     options.binary_location = "/usr/bin/chromium"
 
     # Navegador invisible
@@ -46,50 +47,43 @@ def crear_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-software-rasterizer")
 
-    # Reducir consumo de memoria
-options.add_argument("--headless=new")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--disable-gpu")
-options.add_argument("--disable-extensions")
-options.add_argument("--disable-background-networking")
-options.add_argument("--disable-sync")
-options.add_argument("--disable-default-apps")
-options.add_argument("--no-first-run")
-options.add_argument("--no-default-browser-check")
-options.add_argument("--window-size=1365,768")
+    # Reducir consumo de Chromium
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-background-networking")
+    options.add_argument("--disable-sync")
+    options.add_argument("--disable-default-apps")
+    options.add_argument("--no-first-run")
+    options.add_argument("--no-default-browser-check")
+    options.add_argument("--disable-notifications")
+    options.add_argument("--disable-features=Translate,MediaRouter")
+    options.add_argument("--window-size=1365,768")
 
-# Reducir trabajo innecesario de Chromium
-options.add_argument("--disable-features=Translate,MediaRouter")
-options.add_argument("--disable-notifications")
+    prefs = {
+        "profile.default_content_setting_values.notifications": 2,
+    }
 
-prefs = {
-    "profile.default_content_setting_values.notifications": 2,
-}
-options.add_experimental_option("prefs", prefs)
+    options.add_experimental_option("prefs", prefs)
 
-# No esperar recursos secundarios para considerar terminada
-# una navegación.
-options.page_load_strategy = "eager"
+    # Selenium puede continuar sin esperar todos los recursos secundarios.
+    options.page_load_strategy = "eager"
 
-emitir_log("Usando Chromium: /usr/bin/chromium")
-emitir_log("Usando ChromeDriver: /usr/bin/chromedriver")
-emitir_log("Intentando iniciar Chromium...")
+    emitir_log("Usando Chromium: /usr/bin/chromium")
+    emitir_log("Usando ChromeDriver: /usr/bin/chromedriver")
+    emitir_log("Intentando iniciar Chromium...")
 
-service = Service(
-    executable_path="/usr/bin/chromedriver"
-)
+    service = Service(
+        executable_path="/usr/bin/chromedriver"
+    )
 
-driver = webdriver.Chrome(
-    service=service,
-    options=options
-)
+    driver = webdriver.Chrome(
+        service=service,
+        options=options
+    )
 
-emitir_log("Chromium iniciado correctamente.")
+    emitir_log("Chromium iniciado correctamente.")
 
-return driver
-
-
+    return driver
+    
 def ejecutar_automatizacion(correo, byom_id):
     """Proceso de automatización de Microsoft Outlook y Byom.de."""
     id_simple_byom = byom_id.split("@")[0].strip()
