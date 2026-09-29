@@ -45,7 +45,7 @@
             color: #00ff00;
             font-family: monospace;
             font-size: 13px;
-            height: 270px;
+            height: 180px;
             resize: none;
             width: 100%;
             padding: 10px;
@@ -238,17 +238,25 @@
     // ---------------------------------------------------------
 
     socket.on(
-        "log_event",
-        function(msg) {
+    "log_event",
+    function(msg) {
 
-            logBox.value +=
-                msg.data + "\n";
+        const lineas = (
+            logBox.value +
+            msg.data +
+            "\n"
+        )
+        .split("\n")
+        .filter(Boolean)
+        .slice(-20);
 
-            logBox.scrollTop =
-                logBox.scrollHeight;
+        logBox.value =
+            lineas.join("\n") + "\n";
 
-        }
-    );
+        logBox.scrollTop =
+            logBox.scrollHeight;
+    }
+);
 
 
     // ---------------------------------------------------------
