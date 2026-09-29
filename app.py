@@ -374,36 +374,35 @@ def ejecutar_automatizacion(correo, byom_id):
                 # filas mediante esos selectores, usamos elementos
                 # visibles como metodo alternativo.
                 if not elementos:
-    try:
-        texto_bandeja = driver.find_element(
-            By.TAG_NAME,
-            "body"
-        ).text
+                    try:
+                        texto_bandeja = driver.find_element(
+                            By.TAG_NAME,
+                            "body"
+                        ).text
 
-        encontrado = es_correo_login_amazon(
-            texto_bandeja
-        )
+                        encontrado = es_correo_login_amazon(
+                            texto_bandeja
+                        )
 
-    except Exception:
-        encontrado = False
+                    except Exception:
+                        encontrado = False
 
-for elemento in elementos[:120]:
+                for elemento in elementos[:120]:
+                    try:
+                        if not elemento.is_displayed():
+                            continue
 
-    try:
-        if not elemento.is_displayed():
-            continue
+                        texto = elemento.text.strip()
 
-        texto = elemento.text.strip()
+                        if not texto:
+                            continue
 
-        if not texto:
-            continue
+                        if es_correo_login_amazon(texto):
+                            encontrado = True
+                            break
 
-        if es_correo_login_amazon(texto):
-            encontrado = True
-            break
-
-    except Exception:
-        continue
+                    except Exception:
+                        continue
 
                         if not texto:
                             continue
