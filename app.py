@@ -287,17 +287,8 @@ def ejecutar_automatizacion(correo, byom_id):
             }
         )
 
-        emitir_log("OUTLOOK LISTO.")
-        emitir_log("Esperando nuevos correos de Amazon...")
-
-        # -------------------------------------------------------------
-        # -------------------------------------------------------------
-        # MONITOR DE CORREOS DE AMAZON
-        # -------------------------------------------------------------
-
         emitir_log(
-            "Monitor de correo iniciado. "
-            "Buscando mensajes nuevos de Amazon..."
+                "Outlook listo. Monitor activo."
         )
 
         # -------------------------------------------------------------
@@ -421,23 +412,7 @@ def ejecutar_automatizacion(correo, byom_id):
                     amazon_detectado = True
 
                     emitir_log(
-                        "Correo de inicio de sesion de Amazon detectado."
-                    )
-
-                    emitir_log(
-                        "Remitente identificado: "
-                        "account-update@amazon.com"
-                    )
-
-                    socketio.emit(
-                        "amazon_mail_status",
-                        {
-                            "received": True
-                        }
-                    )
-
-                    emitir_log(
-                        "CORREO DE AMAZON RECIBIDO."
+                        "Correo de Amazon recibido."
                     )
 
                 elif not encontrado:
