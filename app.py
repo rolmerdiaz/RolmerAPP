@@ -15,7 +15,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret_key_rolmer_2026'
+app.config['SECRET_KEY'] = os.environ.get(
+    'SECRET_KEY',
+    'rolmerapp-local'
+)
+
+automatizacion_activa = False
 
 # Configuración de SocketIO usando gevent
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
@@ -54,8 +59,14 @@ def crear_driver():
     options.add_argument("--no-first-run")
     options.add_argument("--no-default-browser-check")
     options.add_argument("--disable-notifications")
+    options.add_argument("--disable-application-cache")
+    options.add_argument("--disable-crash-reporter")
+    options.add_argument("--disable-logging")
+    options.add_argument("--log-level=3")
+    options.add_argument("--disk-cache-size=1")
+    options.add_argument("--media-cache-size=1")
     options.add_argument("--disable-features=Translate,MediaRouter")
-    options.add_argument("--window-size=1365,768")
+    options.add_argument("--window-size=1280,720")
 
     prefs = {
         "profile.default_content_setting_values.notifications": 2,
@@ -66,9 +77,7 @@ def crear_driver():
     # Selenium puede continuar sin esperar todos los recursos secundarios.
     options.page_load_strategy = "eager"
 
-    emitir_log("Usando Chromium: /usr/bin/chromium")
-    emitir_log("Usando ChromeDriver: /usr/bin/chromedriver")
-    emitir_log("Intentando iniciar Chromium...")
+    emitir_log("Iniciando Chromium...")
 
     service = Service(
         executable_path="/usr/bin/chromedriver"
@@ -356,7 +365,7 @@ def ejecutar_automatizacion(correo, byom_id):
         while True:
 
             try:
-                contador_revision += 1
+                
 
                 encontrado = False
 
@@ -374,12 +383,21 @@ def ejecutar_automatizacion(correo, byom_id):
                 # filas mediante esos selectores, usamos elementos
                 # visibles como metodo alternativo.
                 if not elementos:
-                    elementos = driver.find_elements(
-                        By.XPATH,
-                        "//div[string-length(normalize-space(.)) > 0]"
+                    try:
+                        texto_bandeja = driver.find_element(
+                                By.TAG_NAME,
+                                "body"
+                            ).text
+
+                            encontrado = es_correo_login_amazon(
+                                  texto_bandeja
+                            )
+
+                except Exception:
+                    encontrado = False
                     )
 
-                for elemento in elementos:
+                for elemento in elementos[:120]:
 
                     try:
                         if not elemento.is_displayed():
@@ -428,13 +446,9 @@ def ejecutar_automatizacion(correo, byom_id):
 
                 # Confirmacion periodica de que Selenium
                 # continua revisando Outlook.
-                if contador_revision % 10 == 0:
+                
 
-                    emitir_log(
-                        "Monitor activo: revisando bandeja de Outlook..."
-                    )
-
-                socketio.sleep(2)
+                socketio.sleep(3)
 
             except Exception as monitor_error:
 
@@ -463,18 +477,46 @@ def index():
 
 @socketio.on('iniciar_bot')
 def handle_iniciar_bot(data):
+    global automatizacion_activa
+
     correo = data.get('correo', '').strip()
-    byom_id = data.get('id_recuperacion', '').strip()
+    byom_id = data.get(
+        'id_recuperacion',
+        ''
+    ).strip()
 
     if not correo or not byom_id:
-        emitir_log("ERROR: Debes ingresar tanto el correo como el ID de Byom.")
+        emitir_log(
+            "Faltan datos para iniciar."
+        )
         return
 
-    emitir_log(f"Recibida solicitud para el correo: {correo}")
+    if automatizacion_activa:
+        emitir_log(
+            "Ya hay una automatización activa."
+        )
+        return
+
+    automatizacion_activa = True
+
+    def ejecutar_unica():
+        global automatizacion_activa
+
+        try:
+            ejecutar_automatizacion(
+                correo,
+                byom_id
+            )
+
+        finally:
+            automatizacion_activa = False
+
+    emitir_log(
+        "Automatización iniciada."
+    )
+
     socketio.start_background_task(
-        ejecutar_automatizacion,
-        correo,
-        byom_id
+        ejecutar_unica
     )
 
 
